@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Auth0\SDK\Helpers\Tokens;
 
 use Auth0\SDK\Exception\InvalidTokenException;
+use DateTimeInterface;
+use Lcobucci\JWT\Token\RegisteredClaims;
 
 /**
  * Class IdTokenVerifier, an OIDC-compliant ID token verifier.
@@ -37,7 +39,7 @@ final class IdTokenVerifier extends TokenVerifier
          * Subject check
          */
 
-        $tokenSub = $verifiedToken['sub'] ?? null;
+        $tokenSub = $verifiedToken[RegisteredClaims::SUBJECT] ?? null;
         if (! $tokenSub || ! is_string($tokenSub)) {
             throw new InvalidTokenException('Subject (sub) claim must be a string present in the ID token');
         }
@@ -49,8 +51,8 @@ final class IdTokenVerifier extends TokenVerifier
         $now    = $options['time'] ?? time();
         $leeway = $options['leeway'] ?? $this->leeway;
 
-        $tokenIat = $verifiedToken['iat'] ?? null;
-        if (! $tokenIat || ! is_int($tokenIat)) {
+        $tokenIat = $verifiedToken[RegisteredClaims::ISSUED_AT] ?? null;
+        if (! $tokenIat || ! $tokenIat instanceof DateTimeInterface) {
             throw new InvalidTokenException('Issued At (iat) claim must be a number present in the ID token');
         }
 

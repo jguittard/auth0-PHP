@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Auth0\SDK\Helpers\Tokens;
 
 use Auth0\SDK\Exception\InvalidTokenException;
+use DateTimeImmutable;
+use Lcobucci\JWT\Token\RegisteredClaims;
 
 /**
  * Class TokenVerifier, a generic JWT verifier.
@@ -95,12 +97,11 @@ class TokenVerifier
          * Issuer checks
          */
 
-        $tokenIss = $verifiedToken->getClaim('iss', false);
-        if (! $tokenIss || ! is_string($tokenIss)) {
+        if (! $verifiedToken->claims()->has(RegisteredClaims::ISSUER)) {
             throw new InvalidTokenException('Issuer (iss) claim must be a string present in the ID token');
         }
 
-        if ($tokenIss !== $this->issuer) {
+        if (! $verifiedToken->hasBeenIssuedBy($this->issuer)) {
             throw new InvalidTokenException( sprintf(
                 'Issuer (iss) claim mismatch in the ID token; expected "%s", found "%s"', $this->issuer, $tokenIss
             ) );
@@ -110,51 +111,39 @@ class TokenVerifier
          * Audience checks
          */
 
-        $tokenAud = $verifiedToken->getClaim('aud', false);
-        if (! $tokenAud || (! is_string($tokenAud) && ! is_array($tokenAud))) {
+        if (! $verifiedToken->claims()->has(RegisteredClaims::AUDIENCE)) {
             throw new InvalidTokenException(
                 'Audience (aud) claim must be a string or array of strings present in the ID token'
             );
         }
 
-        if (is_array($tokenAud) && ! in_array($this->audience, $tokenAud)) {
+        if (! $verifiedToken->isPermittedFor($this->audience)) {
             throw new InvalidTokenException( sprintf(
-                'Audience (aud) claim mismatch in the ID token; expected "%s" was not one of "%s"',
+                'Audience (aud) claim mismatch in the ID token; expected "%s", found "%s"',
                 $this->audience,
-                implode(', ', $tokenAud)
-            ) );
-        } else if (is_string($tokenAud) && $tokenAud !== $this->audience) {
-            throw new InvalidTokenException( sprintf(
-                'Audience (aud) claim mismatch in the ID token; expected "%s", found "%s"', $this->audience, $tokenAud
-            ) );
+                $verifiedToken->claims()->get(RegisteredClaims::AUDIENCE)
+            ));
         }
 
         /*
          * Clock checks
          */
 
-        $now    = $options['time'] ?? time();
-        $leeway = $options['leeway'] ?? $this->leeway;
+        $now = new DateTimeImmutable();
+        $now->setTimestamp(($options['time'] ?? time()) + ($options['leeway'] ?? $this->leeway));
 
-        $tokenExp = $verifiedToken->getClaim('exp', false);
-        if (! $tokenExp || ! is_int($tokenExp)) {
+        if (! $verifiedToken->claims()->has(RegisteredClaims::EXPIRATION_TIME)) {
             throw new InvalidTokenException('Expiration Time (exp) claim must be a number present in the ID token');
         }
 
-        $expireTime = $tokenExp + $leeway;
-        if ($now > $expireTime) {
+        if ($verifiedToken->isExpired($now)) {
             throw new InvalidTokenException( sprintf(
                 'Expiration Time (exp) claim error in the ID token; current time (%d) is after expiration time (%d)',
-                $now,
-                $expireTime
+                $now->getTimestamp(),
+                $verifiedToken->claims()->get(RegisteredClaims::EXPIRATION_TIME)->getTimestamp()
             ) );
         }
 
-        $profile = [];
-        foreach ($verifiedToken->getClaims() as $claim => $value) {
-            $profile[$claim] = $value->getValue();
-        }
-
-        return $profile;
+        return $verifiedToken->claims()->all();
     }
 }

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Auth0\SDK\Helpers\Tokens;
 
-use Lcobucci\JWT\Signer\Hmac\Sha256 as HsSigner;
+use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Token;
 
 /**
@@ -13,14 +13,6 @@ use Lcobucci\JWT\Token;
  */
 final class SymmetricVerifier extends SignatureVerifier
 {
-
-    /**
-     * Client secret for the application.
-     *
-     * @var string
-     */
-    private $clientSecret;
-
     /**
      * SymmetricVerifier constructor.
      *
@@ -28,29 +20,19 @@ final class SymmetricVerifier extends SignatureVerifier
      */
     public function __construct(string $clientSecret)
     {
-        $this->clientSecret = $clientSecret;
-        parent::__construct('HS256');
+        parent::__construct(new Signer\Hmac\Sha256());
+        $this->setupJwtConfiguration($clientSecret);
     }
 
     /**
      * Check the token signature.
      *
-     * @param Token $token Parsed token to check.
+     * @param Token $parsedToken Parsed token to check.
      *
      * @return boolean
      */
-    protected function checkSignature(Token $token) : bool
+    protected function checkSignature(Token $parsedToken) : bool
     {
-        return $token->verify(new HsSigner(), $this->clientSecret);
-    }
-
-    /**
-     * Algorithm for signature check.
-     *
-     * @return string
-     */
-    protected function getAlgorithm() : string
-    {
-        return 'HS256';
+        return $this->configuration->validator()->validate($parsedToken);
     }
 }
