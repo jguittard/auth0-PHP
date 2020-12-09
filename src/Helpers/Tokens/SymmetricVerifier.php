@@ -33,6 +33,6 @@ final class SymmetricVerifier extends SignatureVerifier
      */
     protected function checkSignature(Token $parsedToken) : bool
     {
-        return $this->configuration->validator()->validate($parsedToken);
+        return $this->doValidateSignature($parsedToken);
     }
 }

@@ -99,8 +99,16 @@ abstract class SignatureVerifier
         $key = Key\InMemory::plainText($strKey);
         $this->configuration = Configuration::forSymmetricSigner($this->signer, $key);
         $this->configuration->setParser($this->tokenParser);
-        $this->configuration->setValidationConstraints([
+        $this->configuration->setValidationConstraints(
             new SignedWith($this->configuration->signer(), $this->configuration->signingKey())
-        ]);
+        );
+    }
+
+    protected function doValidateSignature(Token $parsedToken): bool
+    {
+        return $this->configuration->validator()->validate(
+            $parsedToken,
+            new SignedWith($this->configuration->signer(), $this->configuration->signingKey())
+        );
     }
 }

@@ -52,6 +52,6 @@ final class AsymmetricVerifier extends SignatureVerifier
         }
 
         $this->setupJwtConfiguration($signingKey);
-        return $this->configuration->validator()->validate($parsedToken);
+        return $this->doValidateSignature($parsedToken);
     }
 }
