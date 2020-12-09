@@ -60,7 +60,7 @@ abstract class SignatureVerifier
      *
      * @param string $token Raw JWT ID token.
      *
-     * @return Plain
+     * @return Token\Plain
      *
      * @throws InvalidTokenException If JWT format is incorrect.
      * @throws InvalidTokenException If token algorithm does not match the validator.
@@ -84,7 +84,7 @@ abstract class SignatureVerifier
                 'Signature algorithm of "%s" is not supported. Expected the ID token to be signed with "%s".',
                 $tokenAlg,
                 $this->signer->algorithmId()
-            ) );
+            ));
         }
 
         if (! $this->checkSignature($parsedToken)) {

@@ -103,7 +103,9 @@ class TokenVerifier
 
         if (! $verifiedToken->hasBeenIssuedBy($this->issuer)) {
             throw new InvalidTokenException( sprintf(
-                'Issuer (iss) claim mismatch in the ID token; expected "%s", found "%s"', $this->issuer, $tokenIss
+                'Issuer (iss) claim mismatch in the ID token; expected "%s", found "%s"',
+                $this->issuer,
+                $verifiedToken->claims()->get(RegisteredClaims::ISSUER)
             ) );
         }
 
